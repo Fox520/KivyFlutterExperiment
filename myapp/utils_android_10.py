@@ -1,18 +1,20 @@
-# fails android 10, works Android 8
+# works android 10, fails android 8
 # https://github.com/purushottamyadavbattula/Data_exchange_flutter/blob/master/app/src/main/java/com/andymobitec/data_exchange/MainActivity.java
 import random
 from jnius import autoclass, java_method, PythonJavaClass, cast
 
 
-def open_flutter_activity():
-    FlutterActivity = autoclass("io.flutter.embedding.android.FlutterActivity")
-    PythonActivity = autoclass("org.kivy.android.PythonActivity")
-    MethodChannel = autoclass('io.flutter.plugin.common.MethodChannel')
-    FlutterEngineCache = autoclass("io.flutter.embedding.engine.FlutterEngineCache")
+FlutterActivity = autoclass("io.flutter.embedding.android.FlutterActivity")
+PythonActivity = autoclass("org.kivy.android.PythonActivity")
+MethodChannel = autoclass('io.flutter.plugin.common.MethodChannel')
+FlutterEngineCache = autoclass("io.flutter.embedding.engine.FlutterEngineCache")
+FlutterEngine = autoclass("io.flutter.embedding.engine.FlutterEngine")
+DartEntrypoint = autoclass("io.flutter.embedding.engine.dart.DartExecutor$DartEntrypoint")
 
-    currentActivity = PythonActivity.mActivity
-    context = currentActivity.getApplicationContext()
-    
+currentActivity = PythonActivity.mActivity
+context = currentActivity.getApplicationContext()
+
+def open_flutter_activity():
     # Set up the platform channel or Flutter will throw UnimplementedError
     mc =  MethodChannel(FlutterEngineCache.get("my_engine_id").getDartExecutor().getBinaryMessenger(), "FlutterKivy/test")
     mc.setMethodCallHandler(MyMethodCallHandler())
@@ -46,18 +48,9 @@ class MyMethodCallHandler(PythonJavaClass):
         else:
             result.success("Sent from Kivy Else")
 
-
+# Configure and cache engine
 # Usage: run_on_ui_thread(warm_up_flutter_engine)
 def warm_up_flutter_engine():
-    # Configure and cache engine
-    PythonActivity = autoclass("org.kivy.android.PythonActivity")
-    FlutterEngine = autoclass("io.flutter.embedding.engine.FlutterEngine")
-    DartEntrypoint = autoclass("io.flutter.embedding.engine.dart.DartExecutor$DartEntrypoint")
-    FlutterEngineCache = autoclass("io.flutter.embedding.engine.FlutterEngineCache")
-
-    currentActivity = PythonActivity.mActivity
-    context = currentActivity.getApplicationContext()
-
     flutterEngine = FlutterEngine(context)
     flutterEngine.getDartExecutor().executeDartEntrypoint(DartEntrypoint.createDefault())
     FlutterEngineCache.getInstance().put("my_engine_id", flutterEngine)
@@ -74,4 +67,3 @@ def run_on_ui_thread(func):
     Handler = autoclass('android.os.Handler')
     Looper = autoclass('android.os.Looper')
     Handler(Looper.getMainLooper()).post(MyRunnable())
-    
